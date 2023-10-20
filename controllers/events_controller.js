@@ -1,10 +1,10 @@
-// eventsController.js
 
-const events = []; // Assuming you store events in an array for simplicity
+
+const events = [];
 
 module.exports = {
   index: (req, res) => {
-    // Return events sorted by date in ascending order
+    
     const sortedEvents = events.sort((a, b) => new Date(a.date) - new Date(b.date));
     res.json(sortedEvents);
   },
