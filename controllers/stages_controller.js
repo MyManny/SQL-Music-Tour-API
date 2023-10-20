@@ -1,10 +1,10 @@
 
 
-const stages = []; // Assuming you store stages in an array for simplicity
+const stages = []; 
 
 module.exports = {
   index: (req, res) => {
-    // Return stages sorted by date in ascending order
+    
     const sortedStages = stages.sort((a, b) => new Date(a.date) - new Date(b.date));
     res.json(sorted);
   },
