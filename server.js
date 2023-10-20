@@ -6,7 +6,8 @@ const { Sequelize } = require('sequelize')
 // CONTROLLERS 
 const bandsController = require('./controllers/bands_controller')
 app.use('/bands', bandsController)
-
+const eventsController = require('./controllers/events_controller')
+const stagesController = require('./controllers/stages_controller')
 
 // CONFIGURATION / MIDDLEWARE
 require('dotenv').config()
