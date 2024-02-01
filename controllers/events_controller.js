@@ -1,53 +1,105 @@
+// DEPENDENCIES
+const events = require('express').Router()
+const db = require('../models')
+const { Event, MeetGreet, SetTime, Stage, Band } = db 
+const { Op } = require('sequelize')
 
-
-const events = [];
-
-module.exports = {
-  index: (req, res) => {
-    
-    const sortedEvents = events.sort((a, b) => new Date(a.date) - new Date(b.date));
-    res.json(sortedEvents);
-  },
-
-  show: (req, res) => {
-    const eventId = req.params.id;
-    const event = events.find(event => event.id === eventId);
-
-    if (!event) {
-      res.status(404).json({ error: 'Event not found' });
-    } else {
-      res.json(event);
+// FIND ALL EVENTS
+events.get('/', async (req, res) => {
+    try {
+        const foundEvents = await Event.findAll({
+            order: [ [ 'date', 'ASC' ] ],
+            where: {
+                name: { [Op.like]: `%${req.query.name ? req.query.name : ''}%` }
+            }
+        })
+        res.status(200).json(foundEvents)
+    } catch (error) {
+        res.status(500).json(error)
     }
-  },
+})
 
-  create: (req, res) => {
-    const newEvent = req.body;
-    events.push(newEvent);
-    res.status(201).json(newEvent);
-  },
-
-  update: (req, res) => {
-    const eventId = req.params.id;
-    const updatedEvent = req.body;
-    const eventIndex = events.findIndex(event => event.id === eventId);
-
-    if (eventIndex === -1) {
-      res.status(404).json({ error: 'Event not found' });
-    } else {
-      events[eventIndex] = updatedEvent;
-      res.json(updatedEvent);
+// FIND A SPECIFIC EVENT
+events.get('/:name', async (req, res) => {
+    try {
+        const foundEvent = await Event.findOne({
+            where: { name: req.params.name },
+            include: [
+                { 
+                    model: MeetGreet, 
+                    as: "meet_greets", 
+                    attributes: { exclude: [ "event_id", "band_id" ] },
+                    include: {
+                         model: Band, 
+                         as: "band", 
+                    } 
+                },
+                { 
+                    model: SetTime, 
+                    as: "set_times",
+                    attributes: { exclude: [ "event_id", "stage_id", "band_id" ] },
+                    include: [
+                        { model: Band, as: "band" },
+                        { model: Stage, as: "stage" }
+                    ]
+                },
+                { 
+                    model: Stage, 
+                    as: "stages",
+                    through: { attributes: [] }
+                }
+            ]
+        })
+        res.status(200).json(foundEvent)
+    } catch (error) {
+        res.status(500).json(error)
     }
-  },
+})
 
-  delete: (req, res) => {
-    const eventId = req.params.id;
-    const eventIndex = events.findIndex(event => event.id === eventId);
-
-    if (eventIndex === -1) {
-      res.status(404).json({ error: 'Event not found' });
-    } else {
-      events.splice(eventIndex, 1);
-      res.status(204).send();
+// CREATE AN EVENT
+events.post('/', async (req, res) => {
+    try {
+        const newEvent = await Event.create(req.body)
+        res.status(200).json({
+            message: 'Successfully inserted a new event',
+            data: newEvent
+        })
+    } catch(err) {
+        res.status(500).json(err)
     }
-  },
-};
+})
+
+// UPDATE AN EVENT
+events.put('/:id', async (req, res) => {
+    try {
+        const updatedEvents = await Event.update(req.body, {
+            where: {
+                event_id: req.params.id
+            }
+        })
+        res.status(200).json({
+            message: `Successfully updated ${updatedEvents} event(s)`
+        })
+    } catch(err) {
+        res.status(500).json(err)
+    }
+})
+
+// DELETE AN EVENT
+events.delete('/:id', async (req, res) => {
+    try {
+        const deletedEvents = await Event.destroy({
+            where: {
+                event_id: req.params.id
+            }
+        })
+        res.status(200).json({
+            message: `Successfully deleted ${deletedEvents} event(s)`
+        })
+    } catch(err) {
+        res.status(500).json(err)
+    }
+})
+
+// EXPORT
+module.exports = events
